@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سیستم مدیریت کتابخانه پانسیون ماد</title>
+
+<!-- ========== EmailJS SDK ========== -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tahoma', 'Segoe UI', sans-serif; }
+  body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+  }
+  .container { max-width: 1300px; margin: 0 auto; }
+
+  header {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    margin-bottom: 20px;
+    text-align: center;
+    position: relative;
+  }
+  header h1 { color: #5a3d9a; font-size: 26px; }
+  header p { color: #777; margin-top: 5px; font-size: 14px; }
+  .clock-box {
+    position: absolute;
+    top: 12px;
+    left: 20px;
+    background: #5a3d9a;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.5;
+    box-shadow: 0 4px 12px rgba(90,61,154,0.4);
+    min-width: 150px;
+  }
+  .clock-box .time {
+    font-size: 18px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+    display: block;
+  }
+  .clock-box .date {
+    font-size: 11px;
+    opacity: 0.9;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .alert-bar {
+    background: #fff3cd;
+    color: #856404;
+    padding: 12px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border-right: 5px solid #f39c12;
+    font-size: 14px;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .alert-bar.show { display: block; }
+  .alert-bar b { color: #d35400; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    text-align: center;
+    border-top: 4px solid #5a3d9a;
+  }
+  .stat-card .num { font-size: 26px; font-weight: bold; color: #5a3d9a; }
+  .stat-card .lbl { font-size: 12px; color: #777; margin-top: 4px; }
+  .stat-card.green { border-top-color: #27ae60; }
+  .stat-card.green .num { color: #27ae60; }
+  .stat-card.orange { border-top-color: #f39c12; }
+  .stat-card.orange .num { color: #f39c12; }
+  .stat-card.red { border-top-color: #e74c3c; }
+  .stat-card.red .num { color: #e74c3c; }
+
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .tab-btn {
+    flex: 1;
+    min-width: 150px;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: #fff;
+    color: #5a3d9a;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .tab-btn:hover { transform: translateY(-2px); }
+  .tab-btn.active {
+    background: #5a3d9a;
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(90,61,154,0.5);
+  }
+
+  .panel {
+    background: #fff;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    display: none;
+  }
+  .panel.active { display: block; animation: fadeIn 0.3s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  h2 { color: #5a3d9a; margin-bottom: 18px; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 15px;
+    align-items: flex-end;
+  }
+  .form-group { display: flex; flex-direction: column; flex: 1; min-width: 140px; position: relative; }
+  .form-group label { font-size: 13px; color: #555; margin-bottom: 5px; font-weight: bold; }
+  .form-group input, .form-group select {
+    padding: 10px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border 0.3s;
+    background: #fafafa;
+    font-family: inherit;
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: #5a3d9a;
+    background: #fff;
+  }
+  .form-group input[readonly] {
+    cursor: pointer;
+    background: #f4f0fa;
+    font-weight: bold;
+    color: #5a3d9a;
+    text-align: center;
+  }
+
+  .btn {
+    padding: 11px 22px;
+    border: none;
+    border-radius: 8px;
+    background: #5a3d9a;
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .btn:hover { background: #452c7a; transform: translateY(-2px); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .btn-danger { background: #e74c3c; }
+  .btn-danger:hover { background: #c0392b; }
+  .btn-success { background: #27ae60; }
+  .btn-success:hover { background: #1e8449; }
+  .btn-warning { background: #f39c12; }
+  .btn-warning:hover { background: #d68910; }
+  .btn-outline { background: #fff; color: #5a3d9a; border: 2px solid #5a3d9a; }
+  .btn-outline:hover { background: #5a3d9a; color: #fff; }
+  .btn-small { padding: 6px 12px; font-size: 12px; }
+  .btn-edit { background: #3498db; }
+  .btn-edit:hover { background: #2980b9; }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 12px;
+    background: #faf8ff;
+    border-radius: 10px;
+  }
+  .toolbar input, .toolbar select {
+    padding: 9px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 13px;
+    background: #fff;
+  }
+  .toolbar input { flex: 1; min-width: 180px; }
+
+  .message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    display: none;
+  }
+  .message.success { background: #d4edda; color: #155724; display: block; border-right: 4px solid #27ae60; }
+  .message.error { background: #f8d7da; color: #721c24; display: block; border-right: 4px solid #e74c3c; }
+  .message.info { background: #d1ecf1; color: #0c5460; display: block; border-right: 4px solid #3498db; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 12px 10px;
+    text-align: right;
+    border-bottom: 1px solid #eee;
+  }
+  th { background: #f4f0fa; color: #5a3d9a; font-weight: bold; }
+  tr:hover { background: #faf8ff; }
+  .actions-cell { display: flex; gap: 5px; flex-wrap: wrap; }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .badge-green { background: #d4edda; color: #155724; }
+  .badge-red { background: #f8d7da; color: #721c24; }
+  .badge-blue { background: #d1ecf1; color: #0c5460; }
+  .badge-orange { background: #fff3cd; color: #856404; }
+
+  .empty { text-align: center; color: #999; padding: 30px; font-size: 15px; }
+
+  .book-card {
+    border: 2px solid #eee;
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 15px;
+    background: #fafafa;
+    transition: all 0.3s;
+  }
+  .book-card:hover { border-color: #5a3d9a; box-shadow: 0 5px 15px rgba(90,61,154,0.15); }
+  .book-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed #ccc;
+  }
+  .book-title { font-size: 17px; font-weight: bold; color: #5a3d9a; }
+  .book-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: #555;
+  }
+  .book-stats span b { color: #333; }
+  .borrowers-list { margin-top: 10px; }
+  .borrowers-list h4 { font-size: 13px; color: #666; margin-bottom: 8px; }
+  .borrower-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #fff;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    border-right: 3px solid #f39c12;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .borrower-item .days-left { font-weight: bold; }
+  .days-warning { color: #e74c3c; }
+  .days-ok { color: #27ae60; }
+
+  /* ====== مودال ====== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    backdrop-filter: blur(3px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #fff;
+    padding: 25px;
+    border-radius: 15px;
+    max-width: 550px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideDown 0.3s;
+  }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+  .modal h3 { color: #5a3d9a; margin-bottom: 20px; font-size: 19px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+  .modal .form-row { margin-bottom: 12px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+
+  /* ====== تقویم شمسی ====== */
+  .jalali-calendar {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #fff;
+    border: 2px solid #5a3d9a;
+    border-radius: 12px;
+    padding: 12px;
+    z-index: 500;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    display: none;
+    min-width: 280px;
+    direction: rtl;
+  }
+  .jalali-calendar.show { display: block; }
+  .cal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+  }
+  .cal-header button {
+    background: #5a3d9a;
+    color: #fff;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+  }
+  .cal-header button:hover { background: #452c7a; }
+  .cal-title { font-weight: bold; color: #5a3d9a; font-size: 15px; }
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    margin-bottom: 5px;
+    font-size: 11px;
+    text-align: center;
+    color: #888;
+    font-weight: bold;
+  }
+  .cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+  .cal-day {
+    padding: 8px 4px;
+    text-align: center;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .cal-day:hover { background: #e8e0f5; }
+  .cal-day.today { background: #f39c12; color: #fff; font-weight: bold; }
+  .cal-day.selected { background: #5a3d9a; color: #fff; font-weight: bold; }
+  .cal-day.other-month { color: #ccc; }
+  .cal-day.empty-day { visibility: hidden; }
+  .cal-close {
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px;
+    background: #f4f0fa;
+    color: #5a3d9a;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  .cal-close:hover { background: #e8e0f5; }
+
+  .email-status {
+    display: inline-block;
+    margin-right: 8px;
+    font-size: 12px;
+  }
+
+  @media (max-width: 700px) {
+    .clock-box { position: static; display: inline-block; margin-bottom: 10px; }
+    header { text-align: center; }
+    table { font-size: 12px; }
+    th, td { padding: 8px 4px; }
+    .actions-cell { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="clock-box">
+      <span class="time" id="liveClock">--:--:--</span>
+      <span class="date" id="liveDate">📅 ---</span>
+    </div>
+    <h1>📚 سیستم مدیریت کتابخانه پانسیون ماد</h1>
+    <p>مدیریت دانش‌آموزان، کتاب‌ها و امانت‌ها</p>
+  </header>
+
+  <div class="alert-bar" id="overdueAlert"></div>
+  <div class="stats-grid" id="statsGrid"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('students', this)">👨‍🎓 دانش‌آموزان</button>
+    <button class="tab-btn" onclick="switchTab('books', this)">📖 کتاب‌ها</button>
+    <button class="tab-btn" onclick="switchTab('borrow', this)">🔄 امانت دادن</button>
+    <button class="tab-btn" onclick="switchTab('inventory', this)">📊 موجودی</button>
+    <button class="tab-btn" onclick="switchTab('history', this)">📜 تاریخچه</button>
+    <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ تنظیمات</button>
+  </div>
+
+  <!-- ========== تب دانش‌آموزان ========== -->
+  <div id="students" class="panel active">
+    <h2>ثبت دانش‌آموز جدید</h2>
+    <div id="studentMsg" class="message"></div>
+    <div class="form-row">
+      <div class="form-group"><label>نام</label><input type="text" id="studentName" placeholder="مثلا: علی"></div>
+      <div class="form-group"><label>نام خانوادگی</label><input type="text" id="studentLastName" placeholder="مثلا: احمدی"></div>
+      <div class="form-group"><label>شماره صندلی (۱ تا ۹۰)</label><input type="number" id="studentSeat" min="1" max="90" placeholder="مثلا: 23"></div>
+      <button class="btn" onclick="addStudent()">➕ افزودن</button>
+    </div>
+
+    <h2>لیست دانش‌آموزان</h2>
+    <div class="toolbar">
+      <input type="text" id="searchStudent" placeholder="🔍 جستجو..." oninput="renderStudents()">
+      <select id="sortStudent" onchange="renderStudents()">
+        <option value="seat">مرتب‌سازی: شماره صندلی</option>
+        <option value="name">مرتب‌سازی: نام</option>
+      </select>
+      <button class="btn btn-outline btn-small" onclick="exportStudents()">📥 خروجی Excel</button>
+    </div>
+    <div id="studentsList"></div>
+  </div>
+
+  <!-- ========== تب کتاب‌ها ========== -->
+  <div id="books" class="panel">
+    <h2>ثبت کتاب جدید</h2>
+    <div id="bookMsg" class="message"></div>
+    <div class="form-row">
+      <div class="form-group"><label>نام کتاب</label><input type="text" id="bookName" placeholder="مثلا: خیلی سبز فیزیک یازدهم"></div>
+      <div class="form-group"><label>سال چاپ</label><input type="text" id="bookYear" placeholder="مثلا: 98"></div>
+      <div class="form-group"><label>تعداد کل</label><input type="number" id="bookCount" min="1" placeholder="مثلا: 5"></div>
+      <button class="btn" onclick="addBook()">➕ افزودن</button>
+    </div>
+
+    <h2>لیست کتاب‌ها</h2>
+    <div class="toolbar">
+      <input type="text" id="searchBook" placeholder="🔍 جستجو..." oninput="renderBooks()">
+      <select id="filterBook" onchange="renderBooks()">
+        <option value="all">همه کتاب‌ها</option>
+        <option value="available">فقط موجود</option>
+        <option value="unavailable">فقط ناموجود</option>
+      </select>
+      <button class="btn btn-outline btn-small" onclick="exportBooks()">📥 خروجی Excel</button>
+    </div>
+    <div id="booksList"></div>
+  </div>
+
+  <!-- ========== تب امانت ========== -->
+  <div id="borrow" class="panel">
+    <h2>امانت دادن کتاب</h2>
+    <div id="borrowMsg" class="message"></div>
+    <div class="form-row">
+      <div class="form-group"><label>دانش‌آموز</label><select id="borrowStudent"></select></div>
+      <div class="form-group"><label>کتاب</label><select id="borrowBook"></select></div>
+      <div class="form-group"><label>مدت مجوز (روز)</label><input type="number" id="borrowDays" min="1" value="7" oninput="updateEndDatePreview()"></div>
+      <div class="form-group" style="position:relative;">
+        <label>تاریخ پایان (شمسی)</label>
+        <input type="text" id="borrowEndPreview" readonly placeholder="انتخاب تاریخ..." onclick="openCalendar('borrowEndPreview', 'borrowEndIso')">
+        <input type="hidden" id="borrowEndIso">
+      </div>
+      <button class="btn btn-success" onclick="borrowBook()">🔄 ثبت امانت</button>
+    </div>
+
+    <h2>لیست امانت‌های فعال</h2>
+    <div class="toolbar">
+      <input type="text" id="searchBorrow" placeholder="🔍 جستجو..." oninput="renderBorrows()">
+      <select id="filterBorrow" onchange="renderBorrows()">
+        <option value="all">همه</option>
+        <option value="active">فقط فعال</option>
+        <option value="overdue">فقط تاخیر خورده</option>
+        <option value="soon">نزدیک به سررسید (≤2 روز)</option>
+      </select>
+      <button class="btn btn-outline btn-small" onclick="exportBorrows()">📥 خروجی Excel</button>
+    </div>
+    <div id="borrowsList"></div>
+  </div>
+
+  <!-- ========== تب موجودی ========== -->
+  <div id="inventory" class="panel">
+    <h2>📊 موجودی کامل کتابخانه پانسیون ماد</h2>
+    <div class="toolbar">
+      <input type="text" id="searchInventory" placeholder="🔍 جستجو در موجودی..." oninput="renderInventory()">
+      <button class="btn btn-outline btn-small" onclick="exportInventory()">📥 خروجی Excel</button>
+      <button class="btn btn-outline btn-small" onclick="window.print()">🖨️ چاپ</button>
+    </div>
+    <div id="inventoryList"></div>
+  </div>
+
+  <!-- ========== تب تاریخچه ========== -->
+  <div id="history" class="panel">
+    <h2>📜 تاریخچه امانت‌ها (تحویل داده شده)</h2>
+    <div class="toolbar">
+      <input type="text" id="searchHistory" placeholder="🔍 جستجو در تاریخچه..." oninput="renderHistory()">
+      <button class="btn btn-outline btn-small" onclick="exportHistory()">📥 خروجی Excel</button>
+      <button class="btn btn-danger btn-small" onclick="clearHistory()">🗑️ پاک کردن تاریخچه</button>
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- ========== تب تنظیمات ========== -->
+  <div id="settings" class="panel">
+    <h2>📧 تنظیمات ایمیل اطلاع‌رسانی</h2>
+    <div id="emailSettingsMsg" class="message"></div>
+    <p style="color:#666;font-size:14px;margin-bottom:12px;">
+      ایمیلی که می‌خواهید اعلان‌های امانت و بازگشت کتاب به آن ارسال شود را وارد کنید:
+    </p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>ایمیل مدیر پانسیون ماد</label>
+        <input type="email" id="managerEmail" placeholder="manager@example.com">
+      </div>
+      <button class="btn btn-success" onclick="saveManagerEmail()">💾 ذخیره ایمیل</button>
+      <button class="btn btn-outline" onclick="testEmail()" id="testEmailBtn">🧪 ارسال ایمیل آزمایشی</button>
+    </div>
+    <p style="font-size:12px;color:#888;margin-top:8px;">
+      وضعیت EmailJS:
+      <span id="emailJsStatus" class="badge badge-blue">در حال بررسی...</span>
+    </p>
+    <p style="font-size:12px;color:#888;margin-top:8px;">
+      Service ID: <code>service_onzmcuc</code> |
+      قالب امانت: <code>template_75tffib</code> |
+      قالب بازگشت: <code>template_rx5glek</code>
+    </p>
+
+    <h2 style="margin-top:30px;">💾 پشتیبان‌گیری و بازیابی</h2>
+    <div id="backupMsg" class="message"></div>
+    <p style="margin-bottom:15px;color:#666;font-size:14px;">
+      فایل پشتیبان شامل تمام اطلاعات دانش‌آموزان، کتاب‌ها، امانت‌ها و تاریخچه است.
+    </p>
+    <div class="form-row">
+      <button class="btn btn-success" onclick="downloadBackup()">📥 دانلود فایل پشتیبان (JSON)</button>
+      <button class="btn btn-warning" onclick="document.getElementById('restoreFile').click()">📤 بازیابی از فایل</button>
+      <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="restoreBackup(event)">
+      <button class="btn btn-danger" onclick="clearAll()">🗑️ پاک کردن همه داده‌ها</button>
+    </div>
+    <h2 style="margin-top:30px;">📋 خروجی کامل Excel</h2>
+    <div class="form-row">
+      <button class="btn btn-outline" onclick="exportAllExcel()">📊 دانلود فایل کامل Excel (CSV)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== مودال ویرایش ========== -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3 id="editModalTitle">ویرایش</h3>
+    <div id="editModalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">انصراف</button>
+      <button class="btn btn-success" onclick="saveEdit()">💾 ذخیره تغییرات</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== تقویم شمسی ========== -->
+<div class="jalali-calendar" id="jalaliCalendar">
+  <div class="cal-header">
+    <button onclick="calPrevMonth()">‹</button>
+    <span class="cal-title" id="calTitle">---</span>
+    <button onclick="calNextMonth()">›</button>
+  </div>
+  <div class="cal-weekdays">
+    <div>ش</div><div>ی</div><div>د</div><div>س</div><div>چ</div><div>پ</div><div>ج</div>
+  </div>
+  <div class="cal-days" id="calDays"></div>
+  <button class="cal-close" onclick="closeCalendar()">بستن</button>
+</div>
+
+<script>
+/* ================= EmailJS Configuration ================= */
+const EMAILJS_SERVICE_ID       = 'service_onzmcuc';
+const EMAILJS_TEMPLATE_BORROW  = 'template_75tffib';   // قالب امانت
+const EMAILJS_TEMPLATE_RETURN  = 'template_rx5glek';   // قالب بازگشت
+const EMAILJS_PUBLIC_KEY       = 'qlDGYSvfQtXcg6SBx';
+
+/* مقداردهی اولیه EmailJS */
+if (typeof emailjs !== 'undefined') {
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+}
+
+/* ================= ذخیره‌سازی ================= */
+const STORAGE_KEY = 'libraryData_mad_v1';
+const MANAGER_EMAIL_KEY = 'libraryManagerEmail_mad_v1';
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
+  return { students: [], books: [], borrows: [], history: [] };
+}
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+let db = loadData();
+if (!db.history) db.history = [];
+
+/* ================= ایمیل مدیر ================= */
+function getManagerEmail() { return localStorage.getItem(MANAGER_EMAIL_KEY) || ''; }
+function loadManagerEmailInput() {
+  const el = document.getElementById('managerEmail');
+  if (el) el.value = getManagerEmail();
+}
+function saveManagerEmail() {
+  const email = document.getElementById('managerEmail').value.trim();
+  if (!email || !email.includes('@')) return showMsg('emailSettingsMsg', 'ایمیل معتبر وارد کنید.', 'error');
+  localStorage.setItem(MANAGER_EMAIL_KEY, email);
+  showMsg('emailSettingsMsg', 'ایمیل مدیر ذخیره شد. ✅', 'success');
+}
+function testEmail() {
+  const email = getManagerEmail();
+  if (!email) return showMsg('emailSettingsMsg', 'ابتدا ایمیل مدیر را ذخیره کنید.', 'error');
+  const btn = document.getElementById('testEmailBtn');
+  btn.textContent = '⏳ در حال ارسال...';
+  btn.disabled = true;
+  const now = new Date();
+  const time = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_BORROW, {
+    student_name: 'تست سیستم پانسیون ماد',
+    student_seat: '0',
+    book_name: 'کتاب آزمایشی',
+    book_year: '1403',
+    start_date: todayJalali(),
+    start_time: time,
+    end_date: todayJalali(),
+    end_time: '23:59:59',
+    days: '1',
+    to_email: email
+  }).then(() => {
+    showMsg('emailSettingsMsg', '✅ ایمیل آزمایشی با موفقیت ارسال شد. صندوق ایمیل را چک کنید.', 'success');
+    btn.textContent = '🧪 ارسال ایمیل آزمایشی';
+    btn.disabled = false;
+  }).catch(err => {
+    console.error('EmailJS Error:', err);
+    const errMsg = err && (err.text || err.message) ? (err.text || err.message) : 'نامشخص';
+    showMsg('emailSettingsMsg', '❌ خطا در ارسال: ' + errMsg, 'error');
+    btn.textContent = '🧪 ارسال ایمیل آزمایشی';
+    btn.disabled = false;
+  });
+}
+function updateEmailJsStatus() {
+  const el = document.getElementById('emailJsStatus');
+  if (!el) return;
+  if (typeof emailjs === 'undefined') {
+    el.textContent = '❌ بارگذاری نشد';
+    el.className = 'badge badge-red';
+  } else {
+    el.textContent = '✅ آماده';
+    el.className = 'badge badge-green';
+  }
+}
+
+/* ================= ارسال ایمیل امانت ================= */
+function sendBorrowEmail(student, book, startIso, startTime, endIso, days, endTime) {
+  const managerEmail = getManagerEmail();
+  if (!managerEmail) { console.warn('ایمیل مدیر تنظیم نشده.'); return; }
+  const params = {
+    student_name: `${student.name} ${student.lastName}`,
+    student_seat: student.seat,
+    book_name: book.name,
+    book_year: book.year,
+    start_date: isoToJalali(startIso),
+    start_time: startTime,
+    end_date: isoToJalali(endIso),
+    end_time: endTime || '18:00:00',
+    days: days,
+    to_email: managerEmail
+  };
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_BORROW, params)
+    .then(() => console.log('✅ ایمیل امانت ارسال شد'))
+    .catch(err => console.error('❌ خطا در ارسال ایمیل امانت:', err));
+}
+
+/* ================= ارسال ایمیل بازگشت ================= */
+function sendReturnEmail(student, book, br, returnIso, returnTime) {
+  const managerEmail = getManagerEmail();
+  if (!managerEmail) { console.warn('ایمیل مدیر تنظیم نشده.'); return; }
+  const delay = daysBetweenIso(br.endDate, returnIso);
+  const status = delay > 0 ? `${delay} روز تاخیر` : (delay === 0 ? 'به موقع (امروز آخرین روز)' : 'به موقع');
+  const params = {
+    student_name: `${student.name} ${student.lastName}`,
+    student_seat: student.seat,
+    book_name: book.name,
+    book_year: book.year,
+    start_date: isoToJalali(br.startDate),
+    start_time: br.startTime || '-',
+    end_date: isoToJalali(br.endDate),
+    return_date: isoToJalali(returnIso),
+    return_time: returnTime,
+    return_status: status,
+    days: br.days,
+    to_email: managerEmail
+  };
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_RETURN, params)
+    .then(() => console.log('✅ ایمیل بازگشت ارسال شد'))
+    .catch(err => console.error('❌ خطا در ارسال ایمیل بازگشت:', err));
+}
+
+/* ================= تاریخ شمسی ================= */
+function toJalali(gy, gm, gd) {
+  const g_d_m = [0,31,59,90,120,151,181,212,243,273,304,334];
+  let jy = (gy <= 1600) ? 0 : 979;
+  gy -= (gy <= 1600) ? 621 : 1600;
+  const gy2 = (gm > 2) ? (gy + 1) : gy;
+  let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) - 80 + gd + g_d_m[gm - 1];
+  jy += 33 * Math.floor(days / 12053); days %= 12053;
+  jy += 4 * Math.floor(days / 1461); days %= 1461;
+  if (days > 365) { jy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+  const jm = (days < 186) ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+  const jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+  return [jy, jm, jd];
+}
+function toGregorian(jy, jm, jd) {
+  let gy = (jy <= 979) ? 621 : 1600;
+  jy -= (jy <= 979) ? 0 : 979;
+  let days = (365 * jy) + (Math.floor(jy / 33) * 8) + Math.floor(((jy % 33) + 3) / 4) + 78 + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+  gy += 400 * Math.floor(days / 146097); days %= 146097;
+  if (days > 36524) { gy += 100 * Math.floor(--days / 36524); days %= 36524; if (days >= 365) days++; }
+  gy += 4 * Math.floor(days / 1461); days %= 1461;
+  if (days > 365) { gy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+  let gd = days + 1;
+  const sal_a = [0,31,((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28,31,30,31,30,31,31,30,31,30,31];
+  let gm = 0;
+  for (gm = 0; gm < 13 && gd > sal_a[gm]; gm++) gd -= sal_a[gm];
+  return [gy, gm, gd];
+}
+function gregorianToJalaliStr(gy, gm, gd) {
+  const [jy, jm, jd] = toJalali(gy, gm, gd);
+  return `${jy}/${String(jm).padStart(2,'0')}/${String(jd).padStart(2,'0')}`;
+}
+function jalaliToGregorianDate(jy, jm, jd) { const [gy, gm, gd] = toGregorian(jy, jm, jd); return new Date(gy, gm - 1, gd); }
+function todayJalali() { const d = new Date(); return gregorianToJalaliStr(d.getFullYear(), d.getMonth() + 1, d.getDate()); }
+function todayGregorianDate() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function isoToJalali(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-').map(Number); return gregorianToJalaliStr(y, m, d); }
+function jalaliStrToIso(jStr) {
+  const parts = jStr.split('/').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return null;
+  const gDate = jalaliToGregorianDate(parts[0], parts[1], parts[2]);
+  return gDate.toISOString().split('T')[0];
+}
+function addDaysToIso(iso, days) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+function daysBetweenIso(iso1, iso2) {
+  const d1 = new Date(iso1 + 'T00:00:00');
+  const d2 = new Date(iso2 + 'T00:00:00');
+  return Math.round((d2 - d1) / 86400000);
+}
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+/* ================= ساعت زنده ================= */
+function updateClock() {
+  const now = new Date();
+  const time = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+  document.getElementById('liveClock').textContent = time;
+  document.getElementById('liveDate').textContent = '📅 ' + todayJalali();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ================= تقویم شمسی ================= */
+let calendarTarget = { inputId: null, hiddenId: null };
+let calViewYear, calViewMonth;
+
+function openCalendar(inputId, hiddenId) {
+  calendarTarget = { inputId, hiddenId };
+  const currentVal = document.getElementById(inputId).value;
+  const today = new Date();
+  const [ty, tm, td] = toJalali(today.getFullYear(), today.getMonth() + 1, today.getDate());
+  if (currentVal) {
+    const parts = currentVal.split('/').map(Number);
+    if (parts.length === 3 && !parts.some(isNaN)) { calViewYear = parts[0]; calViewMonth = parts[1]; }
+    else { calViewYear = ty; calViewMonth = tm; }
+  } else { calViewYear = ty; calViewMonth = tm; }
+  renderCalendar();
+  const cal = document.getElementById('jalaliCalendar');
+  const input = document.getElementById(inputId);
+  const rect = input.getBoundingClientRect();
+  cal.classList.add('show');
+  cal.style.position = 'fixed';
+  cal.style.top = (rect.bottom + 5) + 'px';
+  cal.style.left = Math.max(10, rect.left) + 'px';
+  cal.style.right = 'auto';
+}
+function closeCalendar() { document.getElementById('jalaliCalendar').classList.remove('show'); }
+function calPrevMonth() { calViewMonth--; if (calViewMonth < 1) { calViewMonth = 12; calViewYear--; } renderCalendar(); }
+function calNextMonth() { calViewMonth++; if (calViewMonth > 12) { calViewMonth = 1; calViewYear++; } renderCalendar(); }
+function jalaliMonthDays(jy, jm) {
+  if (jm <= 6) return 31;
+  if (jm <= 11) return 30;
+  return ((jy + 12) % 33) % 4 === 0 || ((jy + 12) % 33) % 4 === 1 ? 30 : 29;
+}
+function renderCalendar() {
+  const monthNames = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  document.getElementById('calTitle').textContent = `${monthNames[calViewMonth - 1]} ${calViewYear}`;
+  const daysInMonth = jalaliMonthDays(calViewYear, calViewMonth);
+  const firstDayDate = jalaliToGregorianDate(calViewYear, calViewMonth, 1);
+  let startWeekday = (firstDayDate.getDay() + 1) % 7;
+  const today = new Date();
+  const [ty, tm, td] = toJalali(today.getFullYear(), today.getMonth() + 1, today.getDate());
+  const selectedVal = calendarTarget.inputId ? document.getElementById(calendarTarget.inputId).value : '';
+  let html = '';
+  for (let i = 0; i < startWeekday; i++) html += '<div class="cal-day empty-day"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cls = ['cal-day'];
+    if (calViewYear === ty && calViewMonth === tm && d === td) cls.push('today');
+    const thisStr = `${calViewYear}/${pad2(calViewMonth)}/${pad2(d)}`;
+    if (selectedVal && selectedVal.replace(/\s/g,'') === thisStr) cls.push('selected');
+    html += `<div class="${cls.join(' ')}" onclick="selectDay(${d})">${d}</div>`;
+  }
+  document.getElementById('calDays').innerHTML = html;
+}
+function selectDay(d) {
+  const val = `${calViewYear}/${pad2(calViewMonth)}/${pad2(d)}`;
+  document.getElementById(calendarTarget.inputId).value = val;
+  const iso = jalaliStrToIso(val);
+  if (calendarTarget.hiddenId) document.getElementById(calendarTarget.hiddenId).value = iso;
+  closeCalendar();
+  if (calendarTarget.inputId === 'borrowEndPreview') {
+    const today = todayGregorianDate().toISOString().split('T')[0];
+    const days = daysBetweenIso(today, iso);
+    if (days > 0) document.getElementById('borrowDays').value = days;
+  }
+}
+document.addEventListener('click', e => {
+  const cal = document.getElementById('jalaliCalendar');
+  if (!cal.classList.contains('show')) return;
+  if (cal.contains(e.target)) return;
+  if (e.target.closest('input[readonly]')) return;
+  closeCalendar();
+});
+
+/* ================= ابزار ================= */
+function showMsg(id, text, type) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'message ' + type;
+  setTimeout(() => { el.className = 'message'; }, 4500);
+}
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  btn.classList.add('active');
+  if (tabId === 'borrow') { refreshBorrowSelects(); updateEndDatePreview(); renderBorrows(); }
+  if (tabId === 'inventory') renderInventory();
+  if (tabId === 'students') renderStudents();
+  if (tabId === 'books') renderBooks();
+  if (tabId === 'history') renderHistory();
+  if (tabId === 'settings') { loadManagerEmailInput(); updateEmailJsStatus(); }
+}
+function updateEndDatePreview() {
+  const days = parseInt(document.getElementById('borrowDays').value) || 0;
+  const todayIso = todayGregorianDate().toISOString().split('T')[0];
+  const endIso = addDaysToIso(todayIso, days);
+  document.getElementById('borrowEndPreview').value = isoToJalali(endIso);
+  document.getElementById('borrowEndIso').value = endIso;
+}
+
+/* ================= مودال ویرایش ================= */
+let editingType = null;
+let editingId = null;
+function openModal(type, id) {
+  editingType = type; editingId = id;
+  const body = document.getElementById('editModalBody');
+  const title = document.getElementById('editModalTitle');
+  if (type === 'student') {
+    const s = db.students.find(x => x.id === id);
+    title.textContent = '✏️ ویرایش دانش‌آموز';
+    body.innerHTML = `
+      <div class="form-row"><div class="form-group"><label>نام</label><input type="text" id="editName" value="${escapeHtml(s.name)}"></div></div>
+      <div class="form-row"><div class="form-group"><label>نام خانوادگی</label><input type="text" id="editLastName" value="${escapeHtml(s.lastName)}"></div></div>
+      <div class="form-row"><div class="form-group"><label>شماره صندلی</label><input type="number" id="editSeat" min="1" max="90" value="${s.seat}"></div></div>
+    `;
+  } else if (type === 'book') {
+    const b = db.books.find(x => x.id === id);
+    title.textContent = '✏️ ویرایش کتاب';
+    body.innerHTML = `
+      <div class="form-row"><div class="form-group"><label>نام کتاب</label><input type="text" id="editBookName" value="${escapeHtml(b.name)}"></div></div>
+      <div class="form-row"><div class="form-group"><label>سال چاپ</label><input type="text" id="editBookYear" value="${escapeHtml(b.year)}"></div></div>
+      <div class="form-row"><div class="form-group"><label>تعداد کل</label><input type="number" id="editBookTotal" min="1" value="${b.total}"></div></div>
+    `;
+  } else if (type === 'borrow') {
+    const br = db.borrows.find(x => x.id === id);
+    title.textContent = '✏️ ویرایش امانت';
+    const studentsOpts = db.students.map(s => `<option value="${s.id}" ${s.id === br.studentId ? 'selected' : ''}>${escapeHtml(s.name + ' ' + s.lastName)} - صندلی ${s.seat}</option>`).join('');
+    const booksOpts = db.books.map(b => `<option value="${b.id}" ${b.id === br.bookId ? 'selected' : ''}>${escapeHtml(b.name)}</option>`).join('');
+    body.innerHTML = `
+      <div class="form-row"><div class="form-group"><label>دانش‌آموز</label><select id="editBorrowStudent">${studentsOpts}</select></div></div>
+      <div class="form-row"><div class="form-group"><label>کتاب</label><select id="editBorrowBook">${booksOpts}</select></div></div>
+      <div class="form-row">
+        <div class="form-group"><label>مدت (روز)</label><input type="number" id="editBorrowDays" min="1" value="${br.days}" oninput="updateEditEndPreview()"></div>
+        <div class="form-group" style="position:relative;">
+          <label>تاریخ پایان (شمسی)</label>
+          <input type="text" id="editBorrowEnd" readonly value="${isoToJalali(br.endDate)}" onclick="openCalendar('editBorrowEnd','editBorrowEndIso')">
+          <input type="hidden" id="editBorrowEndIso" value="${br.endDate}">
+        </div>
+      </div>
+    `;
+  }
+  document.getElementById('editModal').classList.add('show');
+}
+function updateEditEndPreview() {
+  const days = parseInt(document.getElementById('editBorrowDays').value) || 0;
+  const br = db.borrows.find(x => x.id === editingId);
+  if (!br) return;
+  const newEnd = addDaysToIso(br.startDate, days);
+  document.getElementById('editBorrowEnd').value = isoToJalali(newEnd);
+  document.getElementById('editBorrowEndIso').value = newEnd;
+}
+function closeModal() { document.getElementById('editModal').classList.remove('show'); editingType = null; editingId = null; }
+function saveEdit() {
+  if (editingType === 'student') {
+    const name = document.getElementById('editName').value.trim();
+    const lastName = document.getElementById('editLastName').value.trim();
+    const seat = parseInt(document.getElementById('editSeat').value);
+    if (!name || !lastName) return alert('نام و نام خانوادگی الزامی است.');
+    if (!seat || seat < 1 || seat > 90) return alert('شماره صندلی باید ۱ تا ۹۰ باشد.');
+    if (db.students.some(s => s.seat === seat && s.id !== editingId)) return alert('این شماره صندلی قبلا ثبت شده است.');
+    const s = db.students.find(x => x.id === editingId);
+    s.name = name; s.lastName = lastName; s.seat = seat;
+    saveData(); renderStudents(); renderBorrows(); renderInventory(); updateStats(); closeModal();
+  } else if (editingType === 'book') {
+    const name = document.getElementById('editBookName').value.trim();
+    const year = document.getElementById('editBookYear').value.trim();
+    const total = parseInt(document.getElementById('editBookTotal').value);
+    if (!name || !year || !total || total < 1) return alert('همه فیلدها الزامی است.');
+    const b = db.books.find(x => x.id === editingId);
+    const borrowed = db.borrows.filter(br => br.bookId === editingId).length;
+    if (total < borrowed) return alert(`تعداد کل نمی‌تواند کمتر از ${borrowed} باشد.`);
+    b.name = name; b.year = year; b.total = total;
+    saveData(); renderBooks(); renderBorrows(); renderInventory(); updateStats(); closeModal();
+  } else if (editingType === 'borrow') {
+    const studentId = parseInt(document.getElementById('editBorrowStudent').value);
+    const bookId = parseInt(document.getElementById('editBorrowBook').value);
+    const days = parseInt(document.getElementById('editBorrowDays').value);
+    const endIso = document.getElementById('editBorrowEndIso').value;
+    if (!studentId || !bookId || !days || !endIso) return alert('همه فیلدها الزامی است.');
+    const br = db.borrows.find(x => x.id === editingId);
+    const book = db.books.find(x => x.id === bookId);
+    const borrowedOther = db.borrows.filter(x => x.bookId === bookId && x.id !== editingId).length;
+    if (borrowedOther >= book.total) return alert('موجودی این کتاب کافی نیست.');
+    br.studentId = studentId; br.bookId = bookId; br.days = days; br.endDate = endIso;
+    saveData(); renderBorrows(); renderInventory(); refreshBorrowSelects(); updateStats(); closeModal();
+  }
+}
+
+/* ================= دانش‌آموزان ================= */
+function addStudent() {
+  const name = document.getElementById('studentName').value.trim();
+  const lastName = document.getElementById('studentLastName').value.trim();
+  const seat = parseInt(document.getElementById('studentSeat').value);
+  if (!name || !lastName) return showMsg('studentMsg', 'لطفا نام و نام خانوادگی را وارد کنید.', 'error');
+  if (!seat || seat < 1 || seat > 90) return showMsg('studentMsg', 'شماره صندلی باید بین ۱ تا ۹۰ باشد.', 'error');
+  if (db.students.some(s => s.seat === seat)) return showMsg('studentMsg', 'این شماره صندلی قبلا ثبت شده است.', 'error');
+  db.students.push({ id: Date.now(), name, lastName, seat });
+  saveData();
+  document.getElementById('studentName').value = '';
+  document.getElementById('studentLastName').value = '';
+  document.getElementById('studentSeat').value = '';
+  showMsg('studentMsg', 'دانش‌آموز با موفقیت ثبت شد. ✅', 'success');
+  renderStudents(); updateStats();
+}
+function deleteStudent(id) {
+  if (!confirm('آیا از حذف این دانش‌آموز مطمئن هستید؟')) return;
+  db.students = db.students.filter(s => s.id !== id);
+  db.borrows = db.borrows.filter(b => b.studentId !== id);
+  saveData(); renderStudents(); renderBorrows(); updateStats();
+}
+function renderStudents() {
+  const el = document.getElementById('studentsList');
+  const q = document.getElementById('searchStudent').value.trim().toLowerCase();
+  const sort = document.getElementById('sortStudent').value;
+  let list = [...db.students];
+  if (q) list = list.filter(s => s.name.toLowerCase().includes(q) || s.lastName.toLowerCase().includes(q) || String(s.seat).includes(q));
+  list.sort((a,b) => sort === 'seat' ? a.seat - b.seat : a.name.localeCompare(b.name, 'fa'));
+  if (list.length === 0) { el.innerHTML = '<div class="empty">هیچ دانش‌آموزی یافت نشد.</div>'; return; }
+  let html = '<table><thead><tr><th>ردیف</th><th>نام</th><th>نام خانوادگی</th><th>صندلی</th><th>امانت فعال</th><th>عملیات</th></tr></thead><tbody>';
+  list.forEach((s, i) => {
+    const activeBorrows = db.borrows.filter(b => b.studentId === s.id).length;
+    html += `<tr>
+      <td>${i+1}</td>
+      <td>${escapeHtml(s.name)}</td>
+      <td>${escapeHtml(s.lastName)}</td>
+      <td><span class="badge badge-blue">${s.seat}</span></td>
+      <td>${activeBorrows > 0 ? `<span class="badge badge-orange">${activeBorrows} کتاب</span>` : '-'}</td>
+      <td><div class="actions-cell">
+        <button class="btn btn-edit btn-small" onclick="openModal('student', ${s.id})">✏️ ویرایش</button>
+        <button class="btn btn-danger btn-small" onclick="deleteStudent(${s.id})">🗑️ حذف</button>
+      </div></td>
+    </tr>`;
+  });
+  el.innerHTML = html + '</tbody></table>';
+}
+
+/* ================= کتاب‌ها ================= */
+function addBook() {
+  const name = document.getElementById('bookName').value.trim();
+  const year = document.getElementById('bookYear').value.trim();
+  const count = parseInt(document.getElementById('bookCount').value);
+  if (!name) return showMsg('bookMsg', 'نام کتاب را وارد کنید.', 'error');
+  if (!year) return showMsg('bookMsg', 'سال چاپ را وارد کنید.', 'error');
+  if (!count || count < 1) return showMsg('bookMsg', 'تعداد کل باید حداقل ۱ باشد.', 'error');
+  db.books.push({ id: Date.now(), name, year, total: count });
+  saveData();
+  document.getElementById('bookName').value = '';
+  document.getElementById('bookYear').value = '';
+  document.getElementById('bookCount').value = '';
+  showMsg('bookMsg', 'کتاب با موفقیت ثبت شد. ✅', 'success');
+  renderBooks(); updateStats();
+}
+function deleteBook(id) {
+  if (db.borrows.some(b => b.bookId === id)) { alert('این کتاب در حال امانت است و قابل حذف نیست.'); return; }
+  if (!confirm('آیا از حذف این کتاب مطمئن هستید؟')) return;
+  db.books = db.books.filter(b => b.id !== id);
+  saveData(); renderBooks(); updateStats();
+}
+function renderBooks() {
+  const el = document.getElementById('booksList');
+  const q = document.getElementById('searchBook').value.trim().toLowerCase();
+  const filter = document.getElementById('filterBook').value;
+  let list = [...db.books];
+  if (q) list = list.filter(b => b.name.toLowerCase().includes(q) || String(b.year).includes(q));
+  if (filter === 'available') list = list.filter(b => (b.total - db.borrows.filter(br => br.bookId === b.id).length) > 0);
+  if (filter === 'unavailable') list = list.filter(b => (b.total - db.borrows.filter(br => br.bookId === b.id).length) <= 0);
+  if (list.length === 0) { el.innerHTML = '<div class="empty">هیچ کتابی یافت نشد.</div>'; return; }
+  let html = '<table><thead><tr><th>ردیف</th><th>نام کتاب</th><th>سال چاپ</th><th>کل</th><th>باقی‌مانده</th><th>عملیات</th></tr></thead><tbody>';
+  list.forEach((b, i) => {
+    const borrowed = db.borrows.filter(br => br.bookId === b.id).length;
+    const remain = b.total - borrowed;
+    html += `<tr>
+      <td>${i+1}</td>
+      <td>${escapeHtml(b.name)}</td>
+      <td>${escapeHtml(b.year)}</td>
+      <td>${b.total}</td>
+      <td><span class="badge ${remain > 0 ? 'badge-green' : 'badge-red'}">${remain}</span></td>
+      <td><div class="actions-cell">
+        <button class="btn btn-edit btn-small" onclick="openModal('book', ${b.id})">✏️ ویرایش</button>
+        <button class="btn btn-danger btn-small" onclick="deleteBook(${b.id})">🗑️ حذف</button>
+      </div></td>
+    </tr>`;
+  });
+  el.innerHTML = html + '</tbody></table>';
+}
+
+/* ================= امانت ================= */
+function refreshBorrowSelects() {
+  const sSel = document.getElementById('borrowStudent');
+  const bSel = document.getElementById('borrowBook');
+  sSel.innerHTML = '<option value="">-- انتخاب دانش‌آموز --</option>';
+  bSel.innerHTML = '<option value="">-- انتخاب کتاب --</option>';
+  db.students.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = `${s.name} ${s.lastName} - صندلی ${s.seat}`;
+    sSel.appendChild(opt);
+  });
+  db.books.forEach(b => {
+    const borrowed = db.borrows.filter(br => br.bookId === b.id).length;
+    const remain = b.total - borrowed;
+    const opt = document.createElement('option');
+    opt.value = b.id;
+    opt.textContent = `${b.name} (موجود: ${remain})`;
+    if (remain <= 0) opt.disabled = true;
+    bSel.appendChild(opt);
+  });
+}
+function borrowBook() {
+  const studentId = parseInt(document.getElementById('borrowStudent').value);
+  const bookId = parseInt(document.getElementById('borrowBook').value);
+  const days = parseInt(document.getElementById('borrowDays').value);
+  const endIso = document.getElementById('borrowEndIso').value;
+  if (!studentId) return showMsg('borrowMsg', 'لطفا دانش‌آموز را انتخاب کنید.', 'error');
+  if (!bookId) return showMsg('borrowMsg', 'لطفا کتاب را انتخاب کنید.', 'error');
+  if (!days || days < 1) return showMsg('borrowMsg', 'مدت مجوز باید حداقل ۱ روز باشد.', 'error');
+  const book = db.books.find(b => b.id === bookId);
+  const borrowed = db.borrows.filter(br => br.bookId === bookId).length;
+  if (borrowed >= book.total) return showMsg('borrowMsg', 'موجودی این کتاب تمام شده است.', 'error');
+  if (db.borrows.some(br => br.studentId === studentId && br.bookId === bookId)) return showMsg('borrowMsg', 'این دانش‌آموز همین کتاب را در امانت دارد.', 'error');
+
+  const student = db.students.find(s => s.id === studentId);
+  const startIso = todayGregorianDate().toISOString().split('T')[0];
+  const now = new Date();
+  const startTime = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+  const finalEndIso = endIso || addDaysToIso(startIso, days);
+  const finalDays = daysBetweenIso(startIso, finalEndIso) || days;
+  const endTime = '18:00:00';
+
+  db.borrows.push({
+    id: Date.now(), studentId, bookId,
+    startDate: startIso, startTime,
+    endDate: finalEndIso, days: finalDays
+  });
+  saveData();
+  showMsg('borrowMsg', 'امانت با موفقیت ثبت شد. ✅ در حال ارسال ایمیل...', 'success');
+
+  /* ارسال ایمیل امانت */
+  sendBorrowEmail(student, book, startIso, startTime, finalEndIso, finalDays, endTime);
+
+  refreshBorrowSelects(); updateEndDatePreview(); renderBorrows(); updateStats();
+}
+function returnBook(borrowId) {
+  const br = db.borrows.find(b => b.id === borrowId);
+  if (!br) return;
+  if (!confirm('آیا این کتاب بازگردانده شده است؟')) return;
+  const student = db.students.find(x => x.id === br.studentId);
+  const book = db.books.find(x => x.id === br.bookId);
+
+  const returnIso = todayGregorianDate().toISOString().split('T')[0];
+  const now = new Date();
+  const returnTime = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+
+  /* ارسال ایمیل بازگشت قبل از حذف */
+  if (student && book) sendReturnEmail(student, book, br, returnIso, returnTime);
+
+  /* انتقال به تاریخچه */
+  db.history.push({
+    ...br,
+    returnDate: returnIso,
+    returnTime: returnTime,
+    returnedAt: Date.now()
+  });
+  db.borrows = db.borrows.filter(b => b.id !== borrowId);
+  saveData();
+  renderBorrows(); refreshBorrowSelects(); updateStats();
+  showMsg('borrowMsg', 'کتاب با موفقیت بازگردانده شد. ✅ در حال ارسال ایمیل...', 'success');
+}
+function renderBorrows() {
+  const el = document.getElementById('borrowsList');
+  const q = document.getElementById('searchBorrow').value.trim().toLowerCase();
+  const filter = document.getElementById('filterBorrow').value;
+  const today = todayGregorianDate().toISOString().split('T')[0];
+  let list = [...db.borrows];
+  if (q) {
+    list = list.filter(br => {
+      const s = db.students.find(x => x.id === br.studentId);
+      const b = db.books.find(x => x.id === br.bookId);
+      if (!s || !b) return false;
+      return (s.name + ' ' + s.lastName).toLowerCase().includes(q) || b.name.toLowerCase().includes(q) || String(s.seat).includes(q);
+    });
+  }
+  if (filter === 'active') list = list.filter(br => br.endDate >= today);
+  if (filter === 'overdue') list = list.filter(br => br.endDate < today);
+  if (filter === 'soon') list = list.filter(br => { const d = daysBetweenIso(today, br.endDate); return d >= 0 && d <= 2; });
+  if (list.length === 0) { el.innerHTML = '<div class="empty">هیچ امانتی یافت نشد.</div>'; return; }
+  list.sort((a,b) => a.endDate.localeCompare(b.endDate));
+  let html = '<table><thead><tr><th>دانش‌آموز</th><th>صندلی</th><th>کتاب</th><th>تحویل (تاریخ/ساعت)</th><th>مهلت پایان</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>';
+  list.forEach(br => {
+    const s = db.students.find(x => x.id === br.studentId);
+    const b = db.books.find(x => x.id === br.bookId);
+    if (!s || !b) return;
+    const daysLeft = daysBetweenIso(today, br.endDate);
+    let statusHtml = '';
+    if (daysLeft < 0) statusHtml = `<span class="days-left days-warning">${Math.abs(daysLeft)} روز تاخیر</span>`;
+    else if (daysLeft === 0) statusHtml = `<span class="days-left days-warning">امروز آخرین روز</span>`;
+    else if (daysLeft <= 2) statusHtml = `<span class="days-left" style="color:#f39c12">${daysLeft} روز</span>`;
+    else statusHtml = `<span class="days-left days-ok">${daysLeft} روز</span>`;
+    html += `<tr>
+      <td>${escapeHtml(s.name + ' ' + s.lastName)}</td>
+      <td><span class="badge badge-blue">${s.seat}</span></td>
+      <td>${escapeHtml(b.name)}</td>
+      <td>${isoToJalali(br.startDate)}<br><small style="color:#888">⏰ ${br.startTime || '-'}</small></td>
+      <td>${isoToJalali(br.endDate)}<br><small style="color:#888">${br.days} روز</small></td>
+      <td>${statusHtml}</td>
+      <td><div class="actions-cell">
+        <button class="btn btn-edit btn-small" onclick="openModal('borrow', ${br.id})">✏️ ویرایش</button>
+        <button class="btn btn-success btn-small" onclick="returnBook(${br.id})">↩️ بازگشت</button>
+      </div></td>
+    </tr>`;
+  });
+  el.innerHTML = html + '</tbody></table>';
+}
+
+/* ================= موجودی ================= */
+function renderInventory() {
+  const el = document.getElementById('inventoryList');
+  const q = document.getElementById('searchInventory').value.trim().toLowerCase();
+  let books = [...db.books];
+  if (q) books = books.filter(b => b.name.toLowerCase().includes(q) || String(b.year).includes(q));
+  if (books.length === 0) { el.innerHTML = '<div class="empty">هیچ کتابی یافت نشد.</div>'; return; }
+  let html = '';
+  books.forEach(b => {
+    const bookBorrows = db.borrows.filter(br => br.bookId === b.id);
+    const borrowedCount = bookBorrows.length;
+    const remain = b.total - borrowedCount;
+    html += `<div class="book-card">
+      <div class="book-card-header">
+        <div class="book-title">📘 ${escapeHtml(b.name)}</div>
+        <div class="book-stats">
+          <span>سال چاپ: <b>${escapeHtml(b.year)}</b></span>
+          <span>تعداد کل: <b>${b.total}</b></span>
+          <span>باقی‌مانده: <b style="color:${remain > 0 ? '#27ae60' : '#e74c3c'}">${remain}</b></span>
+          <span>دست دانش‌آموزان: <b style="color:#f39c12">${borrowedCount}</b></span>
+        </div>
+      </div>`;
+    if (bookBorrows.length > 0) {
+      html += '<div class="borrowers-list"><h4>👥 امانت‌گیرندگان:</h4>';
+      bookBorrows.forEach(br => {
+        const s = db.students.find(x => x.id === br.studentId);
+        if (!s) return;
+        const daysLeft = daysBetweenIso(todayGregorianDate().toISOString().split('T')[0], br.endDate);
+        let statusText = '';
+        if (daysLeft < 0) statusText = `<span class="days-warning">${Math.abs(daysLeft)} روز تاخیر</span>`;
+        else if (daysLeft === 0) statusText = `<span class="days-warning">امروز آخرین روز</span>`;
+        else statusText = `<span class="days-ok">${daysLeft} روز باقی‌مانده</span>`;
+        html += `<div class="borrower-item">
+          <span>1 جلد - <b>${escapeHtml(s.name + ' ' + s.lastName)}</b> (صندلی ${s.seat})</span>
+          <span>تحویل: ${isoToJalali(br.startDate)} ⏰ ${br.startTime || '-'} | مهلت: ${isoToJalali(br.endDate)} - ${statusText}</span>
+        </div>`;
+      });
+      html += '</div>';
+    } else {
+      html += '<div style="font-size:13px;color:#999;margin-top:5px;">هیچ نسخه‌ای در امانت نیست.</div>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+/* ================= تاریخچه ================= */
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  const q = document.getElementById('searchHistory').value.trim().toLowerCase();
+  let list = [...db.history];
+  if (q) {
+    list = list.filter(h => {
+      const s = db.students.find(x => x.id === h.studentId);
+      const b = db.books.find(x => x.id === h.bookId);
+      if (!s || !b) return false;
+      return (s.name + ' ' + s.lastName).toLowerCase().includes(q) || b.name.toLowerCase().includes(q);
+    });
+  }
+  if (list.length === 0) { el.innerHTML = '<div class="empty">تاریخچه‌ای وجود ندارد.</div>'; return; }
+  list.sort((a,b) => b.returnedAt - a.returnedAt);
+  let html = '<table><thead><tr><th>دانش‌آموز</th><th>صندلی</th><th>کتاب</th><th>تحویل گرفته</th><th>مهلت</th><th>بازگشت داده</th><th>وضعیت</th></tr></thead><tbody>';
+  list.forEach(h => {
+    const s = db.students.find(x => x.id === h.studentId);
+    const b = db.books.find(x => x.id === h.bookId);
+    if (!s || !b) return;
+    const delay = daysBetweenIso(h.endDate, h.returnDate);
+    let status = delay > 0 ? `<span class="badge badge-red">${delay} روز تاخیر</span>` : `<span class="badge badge-green">به موقع</span>`;
+    html += `<tr>
+      <td>${escapeHtml(s.name + ' ' + s.lastName)}</td>
+      <td><span class="badge badge-blue">${s.seat}</span></td>
+      <td>${escapeHtml(b.name)}</td>
+      <td>${isoToJalali(h.startDate)}<br><small>⏰ ${h.startTime || '-'}</small></td>
+      <td>${isoToJalali(h.endDate)}</td>
+      <td>${isoToJalali(h.returnDate)}<br><small>⏰ ${h.returnTime || '-'}</small></td>
+      <td>${status}</td>
+    </tr>`;
+  });
+  el.innerHTML = html + '</tbody></table>';
+}
+function clearHistory() {
+  if (!confirm('آیا از پاک کردن کل تاریخچه مطمئن هستید؟')) return;
+  db.history = [];
+  saveData(); renderHistory(); updateStats();
+}
+
+/* ================= آمار ================= */
+function updateStats() {
+  const totalStudents = db.students.length;
+  const totalBooks = db.books.reduce((sum, b) => sum + b.total, 0);
+  const totalBorrowed = db.borrows.length;
+  const totalRemain = totalBooks - totalBorrowed;
+  const today = todayGregorianDate().toISOString().split('T')[0];
+  const overdue = db.borrows.filter(br => br.endDate < today).length;
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="num">${totalStudents}</div><div class="lbl">👨‍🎓 دانش‌آموز</div></div>
+    <div class="stat-card"><div class="num">${db.books.length}</div><div class="lbl">📚 عنوان کتاب</div></div>
+    <div class="stat-card green"><div class="num">${totalRemain}</div><div class="lbl">✅ موجود در قفسه</div></div>
+    <div class="stat-card orange"><div class="num">${totalBorrowed}</div><div class="lbl">🔄 امانت فعال</div></div>
+    <div class="stat-card red"><div class="num">${overdue}</div><div class="lbl">⚠️ تاخیر خورده</div></div>
+  `;
+  const alertEl = document.getElementById('overdueAlert');
+  if (overdue > 0) {
+    alertEl.innerHTML = `⚠️ <b>${overdue} امانت</b> از مهلت مقرر گذشته است. لطفا پیگیری کنید.`;
+    alertEl.classList.add('show');
+  } else alertEl.classList.remove('show');
+}
+
+/* ================= خروجی Excel ================= */
+function downloadCSV(filename, rows) {
+  const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+function exportStudents() {
+  if (db.students.length === 0) return alert('داده‌ای وجود ندارد.');
+  const rows = [['ردیف','نام','نام خانوادگی','شماره صندلی','امانت فعال']];
+  db.students.forEach((s, i) => rows.push([i+1, s.name, s.lastName, s.seat, db.borrows.filter(b => b.studentId === s.id).length]));
+  downloadCSV('students.csv', rows);
+}
+function exportBooks() {
+  if (db.books.length === 0) return alert('داده‌ای وجود ندارد.');
+  const rows = [['ردیف','نام کتاب','سال چاپ','کل','باقی‌مانده','دست دانش‌آموزان']];
+  db.books.forEach((b, i) => {
+    const borrowed = db.borrows.filter(br => br.bookId === b.id).length;
+    rows.push([i+1, b.name, b.year, b.total, b.total - borrowed, borrowed]);
+  });
+  downloadCSV('books.csv', rows);
+}
+function exportBorrows() {
+  if (db.borrows.length === 0) return alert('داده‌ای وجود ندارد.');
+  const rows = [['نام','نام خانوادگی','صندلی','کتاب','تاریخ تحویل','ساعت تحویل','مهلت پایان','مدت','وضعیت']];
+  const today = todayGregorianDate().toISOString().split('T')[0];
+  db.borrows.forEach(br => {
+    const s = db.students.find(x => x.id === br.studentId);
+    const b = db.books.find(x => x.id === br.bookId);
+    if (!s || !b) return;
+    const d = daysBetweenIso(today, br.endDate);
+    const st = d < 0 ? `${Math.abs(d)} روز تاخیر` : d === 0 ? 'امروز آخرین روز' : `${d} روز باقی‌مانده`;
+    rows.push([s.name, s.lastName, s.seat, b.name, isoToJalali(br.startDate), br.startTime || '-', isoToJalali(br.endDate), br.days, st]);
+  });
+  downloadCSV('borrows.csv', rows);
+}
+function exportInventory() {
+  if (db.books.length === 0) return alert('داده‌ای وجود ندارد.');
+  const rows = [['نام کتاب','سال چاپ','کل','باقی‌مانده','دست دانش‌آموزان','جزئیات']];
+  db.books.forEach(b => {
+    const bookBorrows = db.borrows.filter(br => br.bookId === b.id);
+    const details = bookBorrows.map(br => {
+      const s = db.students.find(x => x.id === br.studentId);
+      return s ? `${s.name} ${s.lastName} (صندلی ${s.seat}) - تحویل ${isoToJalali(br.startDate)} ⏰ ${br.startTime || '-'} - مهلت ${isoToJalali(br.endDate)}` : '';
+    }).filter(Boolean).join(' | ');
+    rows.push([b.name, b.year, b.total, b.total - bookBorrows.length, bookBorrows.length, details]);
+  });
+  downloadCSV('inventory.csv', rows);
+}
+function exportHistory() {
+  if (db.history.length === 0) return alert('تاریخچه خالی است.');
+  const rows = [['نام','نام خانوادگی','صندلی','کتاب','تاریخ تحویل','ساعت تحویل','مهلت','تاریخ بازگشت','ساعت بازگشت','وضعیت']];
+  db.history.forEach(h => {
+    const s = db.students.find(x => x.id === h.studentId);
+    const b = db.books.find(x => x.id === h.bookId);
+    if (!s || !b) return;
+    const delay = daysBetweenIso(h.endDate, h.returnDate);
+    const status = delay > 0 ? `${delay} روز تاخیر` : 'به موقع';
+    rows.push([s.name, s.lastName, s.seat, b.name, isoToJalali(h.startDate), h.startTime || '-', isoToJalali(h.endDate), isoToJalali(h.returnDate), h.returnTime || '-', status]);
+  });
+  downloadCSV('history.csv', rows);
+}
+function exportAllExcel() {
+  const rows = [];
+  rows.push(['=== دانش‌آموزان ===']);
+  rows.push(['ردیف','نام','نام خانوادگی','صندلی','امانت فعال']);
+  db.students.forEach((s, i) => rows.push([i+1, s.name, s.lastName, s.seat, db.borrows.filter(b => b.studentId === s.id).length]));
+  rows.push([]);
+  rows.push(['=== کتاب‌ها ===']);
+  rows.push(['ردیف','نام کتاب','سال چاپ','کل','باقی‌مانده','دست دانش‌آموزان']);
+  db.books.forEach((b, i) => {
+    const borrowed = db.borrows.filter(br => br.bookId === b.id).length;
+    rows.push([i+1, b.name, b.year, b.total, b.total - borrowed, borrowed]);
+  });
+  rows.push([]);
+  rows.push(['=== امانت‌های فعال ===']);
+  rows.push(['نام','نام خانوادگی','صندلی','کتاب','تاریخ تحویل','ساعت','مهلت','مدت']);
+  db.borrows.forEach(br => {
+    const s = db.students.find(x => x.id === br.studentId);
+    const b = db.books.find(x => x.id === br.bookId);
+    if (s && b) rows.push([s.name, s.lastName, s.seat, b.name, isoToJalali(br.startDate), br.startTime || '-', isoToJalali(br.endDate), br.days]);
+  });
+  rows.push([]);
+  rows.push(['=== تاریخچه ===']);
+  rows.push(['نام','نام خانوادگی','صندلی','کتاب','تاریخ تحویل','ساعت','مهلت','تاریخ بازگشت','ساعت بازگشت']);
+  db.history.forEach(h => {
+    const s = db.students.find(x => x.id === h.studentId);
+    const b = db.books.find(x => x.id === h.bookId);
+    if (s && b) rows.push([s.name, s.lastName, s.seat, b.name, isoToJalali(h.startDate), h.startTime || '-', isoToJalali(h.endDate), isoToJalali(h.returnDate), h.returnTime || '-']);
+  });
+  downloadCSV('library_mad_full_backup.csv', rows);
+}
+
+/* ================= پشتیبان JSON ================= */
+function downloadBackup() {
+  const data = JSON.stringify(db, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `pansion-mad-backup-${todayJalali().replace(/\//g,'-')}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  showMsg('backupMsg', 'فایل پشتیبان دانلود شد. ✅', 'success');
+}
+function restoreBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.students || !data.books || !data.borrows) throw new Error('فرمت نامعتبر');
+      if (!confirm('تمام داده‌های فعلی جایگزین خواهند شد. ادامه می‌دهید؟')) return;
+      db = data;
+      if (!db.history) db.history = [];
+      saveData();
+      renderStudents(); renderBooks(); renderBorrows(); renderInventory(); renderHistory();
+      refreshBorrowSelects(); updateStats();
+      showMsg('backupMsg', 'بازیابی با موفقیت انجام شد. ✅', 'success');
+    } catch (err) { showMsg('backupMsg', 'فایل نامعتبر است.', 'error'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+function clearAll() {
+  if (!confirm('⚠️ تمام داده‌ها پاک خواهند شد. مطمئن هستید؟')) return;
+  if (!confirm('آیا واقعا مطمئن هستید؟')) return;
+  db = { students: [], books: [], borrows: [], history: [] };
+  saveData();
+  renderStudents(); renderBooks(); renderBorrows(); renderInventory(); renderHistory();
+  refreshBorrowSelects(); updateStats();
+  showMsg('backupMsg', 'همه داده‌ها پاک شد.', 'success');
+}
+
+/* ================= راه‌اندازی ================= */
+renderStudents();
+renderBooks();
+renderBorrows();
+renderInventory();
+renderHistory();
+refreshBorrowSelects();
+updateStats();
+updateEndDatePreview();
+loadManagerEmailInput();
+updateEmailJsStatus();
+</script>
+</body>
+</html>
