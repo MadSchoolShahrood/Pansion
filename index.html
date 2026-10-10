@@ -176,7 +176,6 @@
     transition: all 0.3s;
   }
   .btn:hover { background: #452c7a; transform: translateY(-2px); }
-  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
   .btn-danger { background: #e74c3c; }
   .btn-danger:hover { background: #c0392b; }
   .btn-success { background: #27ae60; }
@@ -217,7 +216,6 @@
   }
   .message.success { background: #d4edda; color: #155724; display: block; border-right: 4px solid #27ae60; }
   .message.error { background: #f8d7da; color: #721c24; display: block; border-right: 4px solid #e74c3c; }
-  .message.info { background: #d1ecf1; color: #0c5460; display: block; border-right: 4px solid #3498db; }
 
   table {
     width: 100%;
@@ -401,12 +399,6 @@
   }
   .cal-close:hover { background: #e8e0f5; }
 
-  .email-status {
-    display: inline-block;
-    margin-right: 8px;
-    font-size: 12px;
-  }
-
   @media (max-width: 700px) {
     .clock-box { position: static; display: inline-block; margin-bottom: 10px; }
     header { text-align: center; }
@@ -436,7 +428,7 @@
     <button class="tab-btn" onclick="switchTab('borrow', this)">🔄 امانت دادن</button>
     <button class="tab-btn" onclick="switchTab('inventory', this)">📊 موجودی</button>
     <button class="tab-btn" onclick="switchTab('history', this)">📜 تاریخچه</button>
-    <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ تنظیمات</button>
+    <button class="tab-btn" onclick="switchTab('backup', this)">💾 پشتیبان‌گیری</button>
   </div>
 
   <!-- ========== تب دانش‌آموزان ========== -->
@@ -538,32 +530,9 @@
     <div id="historyList"></div>
   </div>
 
-  <!-- ========== تب تنظیمات ========== -->
-  <div id="settings" class="panel">
-    <h2>📧 تنظیمات ایمیل اطلاع‌رسانی</h2>
-    <div id="emailSettingsMsg" class="message"></div>
-    <p style="color:#666;font-size:14px;margin-bottom:12px;">
-      ایمیلی که می‌خواهید اعلان‌های امانت و بازگشت کتاب به آن ارسال شود را وارد کنید:
-    </p>
-    <div class="form-row">
-      <div class="form-group">
-        <label>ایمیل مدیر پانسیون ماد</label>
-        <input type="email" id="managerEmail" placeholder="manager@example.com">
-      </div>
-      <button class="btn btn-success" onclick="saveManagerEmail()">💾 ذخیره ایمیل</button>
-      <button class="btn btn-outline" onclick="testEmail()" id="testEmailBtn">🧪 ارسال ایمیل آزمایشی</button>
-    </div>
-    <p style="font-size:12px;color:#888;margin-top:8px;">
-      وضعیت EmailJS:
-      <span id="emailJsStatus" class="badge badge-blue">در حال بررسی...</span>
-    </p>
-    <p style="font-size:12px;color:#888;margin-top:8px;">
-      Service ID: <code>service_onzmcuc</code> |
-      قالب امانت: <code>template_75tffib</code> |
-      قالب بازگشت: <code>template_rx5glek</code>
-    </p>
-
-    <h2 style="margin-top:30px;">💾 پشتیبان‌گیری و بازیابی</h2>
+  <!-- ========== تب پشتیبان‌گیری ========== -->
+  <div id="backup" class="panel">
+    <h2>💾 پشتیبان‌گیری و بازیابی</h2>
     <div id="backupMsg" class="message"></div>
     <p style="margin-bottom:15px;color:#666;font-size:14px;">
       فایل پشتیبان شامل تمام اطلاعات دانش‌آموزان، کتاب‌ها، امانت‌ها و تاریخچه است.
@@ -578,6 +547,12 @@
     <div class="form-row">
       <button class="btn btn-outline" onclick="exportAllExcel()">📊 دانلود فایل کامل Excel (CSV)</button>
     </div>
+    <h2 style="margin-top:30px;">📧 وضعیت ایمیل خودکار</h2>
+    <p style="font-size:14px;color:#666;line-height:1.8;">
+      ✅ ارسال ایمیل هنگام امانت کتاب به‌صورت <b>خودکار</b> انجام می‌شود.<br>
+      ✅ ایمیل گیرنده در خود قالب EmailJS تنظیم شده است.<br>
+      ✅ ارسال به EmailJS: <span class="badge badge-green">متصل</span>
+    </p>
   </div>
 </div>
 
@@ -609,10 +584,9 @@
 
 <script>
 /* ================= EmailJS Configuration ================= */
-const EMAILJS_SERVICE_ID       = 'service_onzmcuc';
-const EMAILJS_TEMPLATE_BORROW  = 'template_75tffib';   // قالب امانت
-const EMAILJS_TEMPLATE_RETURN  = 'template_rx5glek';   // قالب بازگشت
-const EMAILJS_PUBLIC_KEY       = 'qlDGYSvfQtXcg6SBx';
+const EMAILJS_SERVICE_ID      = 'service_onzmcuc';
+const EMAILJS_TEMPLATE_BORROW = 'template_75tffib';
+const EMAILJS_PUBLIC_KEY      = 'qlDGYSvfQtXcg6SBx';
 
 /* مقداردهی اولیه EmailJS */
 if (typeof emailjs !== 'undefined') {
@@ -620,8 +594,7 @@ if (typeof emailjs !== 'undefined') {
 }
 
 /* ================= ذخیره‌سازی ================= */
-const STORAGE_KEY = 'libraryData_mad_v1';
-const MANAGER_EMAIL_KEY = 'libraryManagerEmail_mad_v1';
+const STORAGE_KEY = 'libraryData_mad_v2';
 
 function loadData() {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -632,65 +605,8 @@ function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
 let db = loadData();
 if (!db.history) db.history = [];
 
-/* ================= ایمیل مدیر ================= */
-function getManagerEmail() { return localStorage.getItem(MANAGER_EMAIL_KEY) || ''; }
-function loadManagerEmailInput() {
-  const el = document.getElementById('managerEmail');
-  if (el) el.value = getManagerEmail();
-}
-function saveManagerEmail() {
-  const email = document.getElementById('managerEmail').value.trim();
-  if (!email || !email.includes('@')) return showMsg('emailSettingsMsg', 'ایمیل معتبر وارد کنید.', 'error');
-  localStorage.setItem(MANAGER_EMAIL_KEY, email);
-  showMsg('emailSettingsMsg', 'ایمیل مدیر ذخیره شد. ✅', 'success');
-}
-function testEmail() {
-  const email = getManagerEmail();
-  if (!email) return showMsg('emailSettingsMsg', 'ابتدا ایمیل مدیر را ذخیره کنید.', 'error');
-  const btn = document.getElementById('testEmailBtn');
-  btn.textContent = '⏳ در حال ارسال...';
-  btn.disabled = true;
-  const now = new Date();
-  const time = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_BORROW, {
-    student_name: 'تست سیستم پانسیون ماد',
-    student_seat: '0',
-    book_name: 'کتاب آزمایشی',
-    book_year: '1403',
-    start_date: todayJalali(),
-    start_time: time,
-    end_date: todayJalali(),
-    end_time: '23:59:59',
-    days: '1',
-    to_email: email
-  }).then(() => {
-    showMsg('emailSettingsMsg', '✅ ایمیل آزمایشی با موفقیت ارسال شد. صندوق ایمیل را چک کنید.', 'success');
-    btn.textContent = '🧪 ارسال ایمیل آزمایشی';
-    btn.disabled = false;
-  }).catch(err => {
-    console.error('EmailJS Error:', err);
-    const errMsg = err && (err.text || err.message) ? (err.text || err.message) : 'نامشخص';
-    showMsg('emailSettingsMsg', '❌ خطا در ارسال: ' + errMsg, 'error');
-    btn.textContent = '🧪 ارسال ایمیل آزمایشی';
-    btn.disabled = false;
-  });
-}
-function updateEmailJsStatus() {
-  const el = document.getElementById('emailJsStatus');
-  if (!el) return;
-  if (typeof emailjs === 'undefined') {
-    el.textContent = '❌ بارگذاری نشد';
-    el.className = 'badge badge-red';
-  } else {
-    el.textContent = '✅ آماده';
-    el.className = 'badge badge-green';
-  }
-}
-
-/* ================= ارسال ایمیل امانت ================= */
+/* ================= ارسال ایمیل امانت (خودکار) ================= */
 function sendBorrowEmail(student, book, startIso, startTime, endIso, days, endTime) {
-  const managerEmail = getManagerEmail();
-  if (!managerEmail) { console.warn('ایمیل مدیر تنظیم نشده.'); return; }
   const params = {
     student_name: `${student.name} ${student.lastName}`,
     student_seat: student.seat,
@@ -701,36 +617,11 @@ function sendBorrowEmail(student, book, startIso, startTime, endIso, days, endTi
     end_date: isoToJalali(endIso),
     end_time: endTime || '18:00:00',
     days: days,
-    to_email: managerEmail
+    message: `کتاب «${book.name}» به ${student.name} ${student.lastName} (صندلی ${student.seat}) امانت داده شد.`
   };
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_BORROW, params)
-    .then(() => console.log('✅ ایمیل امانت ارسال شد'))
+    .then(res => console.log('✅ ایمیل امانت ارسال شد:', res.status))
     .catch(err => console.error('❌ خطا در ارسال ایمیل امانت:', err));
-}
-
-/* ================= ارسال ایمیل بازگشت ================= */
-function sendReturnEmail(student, book, br, returnIso, returnTime) {
-  const managerEmail = getManagerEmail();
-  if (!managerEmail) { console.warn('ایمیل مدیر تنظیم نشده.'); return; }
-  const delay = daysBetweenIso(br.endDate, returnIso);
-  const status = delay > 0 ? `${delay} روز تاخیر` : (delay === 0 ? 'به موقع (امروز آخرین روز)' : 'به موقع');
-  const params = {
-    student_name: `${student.name} ${student.lastName}`,
-    student_seat: student.seat,
-    book_name: book.name,
-    book_year: book.year,
-    start_date: isoToJalali(br.startDate),
-    start_time: br.startTime || '-',
-    end_date: isoToJalali(br.endDate),
-    return_date: isoToJalali(returnIso),
-    return_time: returnTime,
-    return_status: status,
-    days: br.days,
-    to_email: managerEmail
-  };
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_RETURN, params)
-    .then(() => console.log('✅ ایمیل بازگشت ارسال شد'))
-    .catch(err => console.error('❌ خطا در ارسال ایمیل بازگشت:', err));
 }
 
 /* ================= تاریخ شمسی ================= */
@@ -889,7 +780,6 @@ function switchTab(tabId, btn) {
   if (tabId === 'students') renderStudents();
   if (tabId === 'books') renderBooks();
   if (tabId === 'history') renderHistory();
-  if (tabId === 'settings') { loadManagerEmailInput(); updateEmailJsStatus(); }
 }
 function updateEndDatePreview() {
   const days = parseInt(document.getElementById('borrowDays').value) || 0;
@@ -1126,7 +1016,6 @@ function borrowBook() {
   const startTime = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
   const finalEndIso = endIso || addDaysToIso(startIso, days);
   const finalDays = daysBetweenIso(startIso, finalEndIso) || days;
-  const endTime = '18:00:00';
 
   db.borrows.push({
     id: Date.now(), studentId, bookId,
@@ -1134,28 +1023,20 @@ function borrowBook() {
     endDate: finalEndIso, days: finalDays
   });
   saveData();
-  showMsg('borrowMsg', 'امانت با موفقیت ثبت شد. ✅ در حال ارسال ایمیل...', 'success');
 
-  /* ارسال ایمیل امانت */
-  sendBorrowEmail(student, book, startIso, startTime, finalEndIso, finalDays, endTime);
+  /* ✅ ارسال خودکار ایمیل هنگام امانت */
+  sendBorrowEmail(student, book, startIso, startTime, finalEndIso, finalDays, '18:00:00');
 
+  showMsg('borrowMsg', '✅ امانت ثبت شد و ایمیل به‌صورت خودکار ارسال گردید.', 'success');
   refreshBorrowSelects(); updateEndDatePreview(); renderBorrows(); updateStats();
 }
 function returnBook(borrowId) {
   const br = db.borrows.find(b => b.id === borrowId);
   if (!br) return;
   if (!confirm('آیا این کتاب بازگردانده شده است؟')) return;
-  const student = db.students.find(x => x.id === br.studentId);
-  const book = db.books.find(x => x.id === br.bookId);
-
   const returnIso = todayGregorianDate().toISOString().split('T')[0];
   const now = new Date();
   const returnTime = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
-
-  /* ارسال ایمیل بازگشت قبل از حذف */
-  if (student && book) sendReturnEmail(student, book, br, returnIso, returnTime);
-
-  /* انتقال به تاریخچه */
   db.history.push({
     ...br,
     returnDate: returnIso,
@@ -1165,7 +1046,7 @@ function returnBook(borrowId) {
   db.borrows = db.borrows.filter(b => b.id !== borrowId);
   saveData();
   renderBorrows(); refreshBorrowSelects(); updateStats();
-  showMsg('borrowMsg', 'کتاب با موفقیت بازگردانده شد. ✅ در حال ارسال ایمیل...', 'success');
+  showMsg('borrowMsg', 'کتاب با موفقیت بازگردانده شد. ✅', 'success');
 }
 function renderBorrows() {
   const el = document.getElementById('borrowsList');
@@ -1467,8 +1348,6 @@ renderHistory();
 refreshBorrowSelects();
 updateStats();
 updateEndDatePreview();
-loadManagerEmailInput();
-updateEmailJsStatus();
 </script>
 </body>
 </html>
